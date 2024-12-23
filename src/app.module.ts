@@ -3,9 +3,15 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { MongooseModule } from '@nestjs/mongoose';
 import { MessagesModule } from './messages/messages.module';
+import { ConfigModule } from '@nestjs/config';
 
 @Module({
-  imports: [MongooseModule.forRoot('mongodb://localhost:27017/snap_talk'), // MongoDB URI
+  imports: [
+    ConfigModule.forRoot({
+      isGlobal: true, // Ensures .env variables are accessible throughout the application
+    }),
+    // Use .env for MongoDB URI
+    MongooseModule.forRoot(process.env.MONGO_URI || 'mongodb://localhost:27017/snap_talk'), 
     MessagesModule,],
   controllers: [AppController],
   providers: [AppService],

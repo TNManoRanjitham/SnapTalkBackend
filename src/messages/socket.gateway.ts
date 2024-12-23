@@ -12,7 +12,14 @@ import {
   
   @WebSocketGateway({
     cors: {
-      origin: 'http://localhost:3001', // Frontend server URL for cross-origin requests
+      origin: (origin, callback) => {
+        const frontendUrl = process.env.FRONTEND_URL; // Accessing the environment variable
+        if (origin === frontendUrl || !origin) {
+          callback(null, true); // Allow requests from the frontend URL for cross-origin requests
+        } else {
+          callback(new Error('Not allowed by CORS')); // Reject other requests
+        }
+      }, 
       methods: ['GET', 'POST'],
     },
   })

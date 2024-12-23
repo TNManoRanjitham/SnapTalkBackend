@@ -27,6 +27,9 @@ let MessagesGateway = class MessagesGateway {
             activeUsers.set(userId, client);
             console.log(`User connected: ${userId}`);
         }
+        else {
+            console.log('A client connected without a userId');
+        }
     }
     handleDisconnect(client) {
         const userId = [...activeUsers.entries()].find(([_, socket]) => socket.id === client.id)?.[0];
@@ -60,7 +63,15 @@ __decorate([
 exports.MessagesGateway = MessagesGateway = __decorate([
     (0, websockets_1.WebSocketGateway)({
         cors: {
-            origin: 'http://localhost:3001',
+            origin: (origin, callback) => {
+                const frontendUrl = process.env.FRONTEND_URL;
+                if (origin === frontendUrl || !origin) {
+                    callback(null, true);
+                }
+                else {
+                    callback(new Error('Not allowed by CORS'));
+                }
+            },
             methods: ['GET', 'POST'],
         },
     }),
