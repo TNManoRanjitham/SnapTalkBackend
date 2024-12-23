@@ -1,0 +1,36 @@
+# Node.js dependencies
+node_modules/
+
+# Build outputs
+dist/
+build/
+
+# Logs and temporary files
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+*.tmp
+
+# Local environment variables
+.env
+.env.*
+
+# System files
+.DS_Store
+Thumbs.db
+
+# IDE-specific files
+.vscode/
+.idea/
+
+# Dependency management
+package-lock.json
+yarn.lock
+
+# Coverage reports
+coverage/
+
+# Miscellaneous
+*.cache
+tmp/
