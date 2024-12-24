@@ -6,7 +6,10 @@ import {
 } from '@nestjs/websockets';
 import { Socket } from 'socket.io';
 import { MessagesService } from './messages.service';
+import { ApiOperation, ApiTags, ApiBody } from '@nestjs/swagger';
+import { SendMessageDto, ReceiveMessageDto } from './messages.dto';
 
+@ApiTags('WebSocket')
 @WebSocketGateway({
   cors: {
     origin: (origin, callback) => {
@@ -47,6 +50,8 @@ export class MessagesGateway {
   }
 
   // Handles incoming messages and routes them to the appropriate recipients
+  @ApiOperation({ summary: 'Send a message via WebSocket' })
+  @ApiBody({ type: SendMessageDto, description: 'Payload for sending a message' })
   @SubscribeMessage('send_message')
   async handleMessage(
     @MessageBody() data: { sender: string; recipient: string; content: string },
@@ -57,12 +62,12 @@ export class MessagesGateway {
     const message = await this.messagesService.createMessage(data);
 
     // Emit the message to the sender
-    client.emit('receive_message', message);
+    client.emit('receive_message', { ...data, timestamp: new Date().toISOString() } as ReceiveMessageDto);
 
     // Check if the recipient is online
     const recipientSocket = this.activeUsers.get(data.recipient);
     if (recipientSocket) {
-      recipientSocket.emit('receive_message', message);
+      recipientSocket.emit('receive_message', { ...data, timestamp: new Date().toISOString() } as ReceiveMessageDto);
     } else {
       console.log(`Recipient ${data.recipient} is not connected`);
     }
