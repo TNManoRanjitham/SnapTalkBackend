@@ -1,0 +1,33 @@
+services:
+  # NestJS Application
+  app:
+    build: .
+    container_name: snaptalk-backend
+    ports:
+      - "3001:3001"  # Map port 3001 from container to port 3001 on host
+    environment:
+      - MONGODB_URI=mongodb://127.0.0.1:27017/snap_talk  # Correct MongoDB connection string
+      - FRONTEND_URL=http://localhost:3000
+      - PORT=3001
+    volumes:
+      - .:/usr/src/app
+    depends_on:
+      - mongodb  # Ensure MongoDB is started before the NestJS app
+
+  # MongoDB Database
+  mongodb:
+    image: mongo:latest
+    container_name: mongodb
+    ports:
+      - "27017:27017"  # Map MongoDB port from container to host
+    volumes:
+      - mongodb-data:/data/db  # Persist MongoDB data
+    networks:
+      - nestjs-network
+
+volumes:
+  mongodb-data:
+
+networks:
+  nestjs-network:
+    driver: bridge

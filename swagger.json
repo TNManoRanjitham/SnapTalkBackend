@@ -27,7 +27,7 @@
     },
     "/auth/signup": {
       "post": {
-        "operationId": "UserController_signup",
+        "operationId": "AuthController_signup",
         "parameters": [],
         "requestBody": {
           "required": true,
@@ -55,7 +55,7 @@
     },
     "/auth/login": {
       "post": {
-        "operationId": "UserController_login",
+        "operationId": "AuthController_login",
         "parameters": [],
         "requestBody": {
           "required": true,
@@ -81,6 +81,20 @@
         },
         "tags": [
           "auth"
+        ]
+      }
+    },
+    "/user": {
+      "get": {
+        "operationId": "UserController_getUsers",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "user"
         ]
       }
     }
