@@ -1,5 +1,5 @@
 // src/user/user.controller.ts
-import { Controller, Post, Body, Res, Req, HttpStatus, Get , UseGuards} from '@nestjs/common';
+import { Controller, Get , UseGuards, Query} from '@nestjs/common';
 import { UserService } from './user.service';
 import { ApiTags, ApiResponse, ApiBody } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
@@ -11,8 +11,9 @@ export class UserController {
 
   @UseGuards(JwtAuthGuard)
   @Get()
-  async getUsers() {
-    return await this.userService.getUser();
+  async getUsers(@Query('userId') userId: string) {
+    // Call the service method with the userId
+    return this.userService.getUsers(userId);
   }
 
 }

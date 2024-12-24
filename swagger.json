@@ -87,7 +87,16 @@
     "/user": {
       "get": {
         "operationId": "UserController_getUsers",
-        "parameters": [],
+        "parameters": [
+          {
+            "name": "userId",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": ""

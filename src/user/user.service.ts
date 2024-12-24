@@ -19,8 +19,8 @@ export class UserService {
     return user;
   }
 
-  async getUser() {
-    const users = await this.userModel.find().select('username');
+  async getUsers(userId: string) {
+    const users = await this.userModel.find({username : { $nin: [userId] }}).select('username');
     return users;
   }
 
