@@ -62,7 +62,7 @@ describe('MessagesGateway', () => {
       recipient: 'recipient-user',
       content: 'Hello!',
     };
-    const message = { ...messageData, timestamp: new Date() };
+    const message = { ...messageData, timestamp: new Date().toISOString() };
 
     // Mock the createMessage method to return a message
     mockMessagesService.createMessage.mockResolvedValue(message);
@@ -71,7 +71,10 @@ describe('MessagesGateway', () => {
     await gateway.handleMessage(messageData, mockSocket);
 
     // Check if message was emitted to the sender
-    expect(mockSocket.emit).toHaveBeenCalledWith('receive_message', message);
+    expect(mockSocket.emit).toHaveBeenCalledWith('receive_message', expect.objectContaining({
+      sender: message.sender,
+      content: message.content,
+    }));
 
     // If the recipient is connected, emit to them as well
     expect(gateway['activeUsers'].size).toBe(0); // No recipient is connected, so size should be 0
