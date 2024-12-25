@@ -8,6 +8,7 @@ import { Socket } from 'socket.io';
 import { MessagesService } from './messages.service';
 import { ApiOperation, ApiTags, ApiBody } from '@nestjs/swagger';
 import { SendMessageDto, ReceiveMessageDto } from './messages.dto';
+import { MessageStatus } from './message.schema';
 
 @ApiTags('WebSocket')
 @WebSocketGateway({
@@ -54,23 +55,24 @@ export class MessagesGateway {
   @ApiBody({ type: SendMessageDto, description: 'Payload for sending a message' })
   @SubscribeMessage('send_message')
   async handleMessage(
-    @MessageBody() data: { sender: string; recipient: string; content: string, deviceId: string },
+    @MessageBody() data: { sender: string; recipient: string; content: string },
     @ConnectedSocket() client: Socket,
   ) {
-    console.log('Message received:', data);
+    console.log('Sent Message Received:', data);
     const message = await this.messagesService.createMessage(data);
 
     // Emit the message to the sender
-    client.emit('receive_message', { ...data, timestamp: new Date().toISOString() } as ReceiveMessageDto);
+    client.emit('receive_message', { ...data, _id : message._id.toString(), timestamp: new Date().toISOString() } as ReceiveMessageDto);
 
     // Check if the recipient is online
     const recipientSocket = this.activeUsers.get(data.recipient);
+    
     if (recipientSocket) {
-      recipientSocket.emit('receive_message', { ...data, timestamp: new Date().toISOString() } as ReceiveMessageDto);
-      await this.messagesService.updateMessageStatus(message._id.toString(), data.deviceId, "delivered");
+      console.log('Publish receive_message event to the recipient', data.recipient);
+      recipientSocket.emit('receive_message', { ...data, _id : message._id.toString(), timestamp: new Date().toISOString() } as ReceiveMessageDto);
     } else {
       console.log(`Recipient ${data.recipient} is not connected`);
-      await this.messagesService.storeUndeliveredMessage(message._id.toString(), data.deviceId);
+      await this.messagesService.storeUndeliveredMessage(message._id.toString());
 
     }
   }
@@ -95,17 +97,18 @@ export class MessagesGateway {
 
           if (recipientSocket) {
             client.emit('receive_message', {
+              _id: message._id.toString(),
               sender: recipient,
               recipient: loggedUserId,
               content: message.content,
               timestamp: new Date().toISOString(),
             });
             
-            message.status.forEach((status) => {
-              if (status.deviceId) {
-                this.messagesService.updateMessageStatus(message._id.toString(), status.deviceId, 'delivered');
-              }
-            });
+            // message.status.forEach((status) => {
+            //   if (status.deviceId) {
+            //     this.messagesService.updateMessageStatus(message._id.toString(), status.deviceId, 'delivered');
+            //   }
+            // });
           } else {
             console.log(`Recipient ${loggedUserId} is not online`);
           }
@@ -118,4 +121,16 @@ export class MessagesGateway {
     }
   }
 
+  @ApiOperation({ summary: 'Handle message delivered event' })
+  @SubscribeMessage('message_delivered')
+  async handleDeliveredMessage(
+    @MessageBody() { messageId, userId }: { messageId: string; userId: string },
+  ) {
+    try {
+      console.log('Message delivered  event received:', messageId);
+      await this.messagesService.updateMessageStatus(messageId, userId, MessageStatus.DELIVERED);
+    } catch (error) {
+      console.error('Error updating message status to delivered:', error);
+    }
+  }
 }

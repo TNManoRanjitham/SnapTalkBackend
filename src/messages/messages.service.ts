@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { Message } from './message.schema';
+import { Message, MessageStatus } from './message.schema';
 
 @Injectable()
 export class MessagesService {
@@ -10,11 +10,11 @@ export class MessagesService {
   ) { }
 
   // Create a new message in the db
-  async createMessage(data: { sender: string; recipient: string; content: string, deviceId: string }): Promise<Message> {
+  async createMessage(data: { sender: string; recipient: string; content: string }): Promise<Message> {
     if (!data.sender || !data.recipient || !data.content) {
       throw new Error('Sender, recipient, and content are required.');
     }
-    const message = new this.messageModel({ ...data, status: [{ deviceId: data.deviceId, status: "sent" }] });
+    const message = new this.messageModel({ ...data, status: MessageStatus.SENT });
     return message.save();
   }
 
@@ -29,17 +29,16 @@ export class MessagesService {
   }
 
   // Store undelivered message
-  async storeUndeliveredMessage(_id: string, deviceId: string) {
+  async storeUndeliveredMessage(_id: string) {
     try {
       // Update the status of the specific deviceId in the message
       const result = await this.messageModel.updateOne(
         {
           _id: _id,
-          "status.deviceId": deviceId, // Find the specific status by deviceId
         },
         {
           $set: {
-            "status.$.status": "sent", // Update only the matched element in the status array
+            "status": MessageStatus.SENT
           },
         }
       );
@@ -54,21 +53,13 @@ export class MessagesService {
     }
   }
 
-  async updateMessageStatus(messageId: string, deviceId: string, status: string) {
+  async updateMessageStatus(messageId: string, userId: string, status: MessageStatus) {
     try {
-      const message = await this.messageModel.findById(messageId);
+      const message = await this.messageModel.findOne({_id : messageId, recipient : userId});
       if (!message) {
         throw new Error('Message not found');
       }
-
-      const existingStatus = message.status.find(s => s.deviceId === deviceId);
-
-      if (existingStatus) {
-        existingStatus.status = status;
-      } else {
-        message.status.push({ deviceId, status });
-      }
-
+      message.status = status;
       await message.save();
       return { message: 'Message status updated successfully' };
     } catch (error) {
@@ -80,7 +71,7 @@ export class MessagesService {
     return this.messageModel.find({
       sender: userId,
       recipient: loggedUserId,
-      'status.status': 'sent', // 'sent' status means the message is undelivered
+      status: MessageStatus.SENT, 
     });
   }
 }

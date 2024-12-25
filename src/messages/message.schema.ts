@@ -1,6 +1,13 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document } from 'mongoose';
 
+export enum MessageStatus {
+  SENT = 'Sent',
+  DELIVERED = 'Delivered',
+  READ = 'Read',
+}
+
+
 @Schema()
 export class Status {
   @Prop({ required: true })
@@ -24,8 +31,11 @@ export class Message extends Document {
   @Prop({ default: Date.now })
   timestamp: Date;
 
-  @Prop({ type: [Status], default: [] })
-  status: Status[];
+  @Prop({ required: true, enum: MessageStatus })
+  status: MessageStatus;
+
+  // @Prop({ type: [Status], default: [] })
+  // status: Status[];
 }
 
 // Create the Mongoose schema

@@ -15,6 +15,9 @@ export class SendMessageDto {
 }
 
 export class ReceiveMessageDto {
+  @ApiProperty({ description: 'Unique identifier of the message' })
+  _id: string;
+  
   @ApiProperty({ description: 'The ID of the sender', example: 'user123' })
   sender: string;
 

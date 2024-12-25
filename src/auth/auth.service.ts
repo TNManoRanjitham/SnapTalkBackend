@@ -16,7 +16,7 @@ export class AuthService {
   ) { }
 
   async createUser(username: string, password: string) {
-    const existingUser = await this.userService.findByUsername(username); // Check if username already exists
+    const existingUser = await this.userService.getByUsername(username); // Check if username already exists
     if (existingUser) {
       throw new Error('User already exists');
     }
