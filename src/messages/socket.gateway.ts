@@ -58,7 +58,6 @@ export class MessagesGateway {
     @ConnectedSocket() client: Socket,
   ) {
     console.log('Message received:', data);
-
     const message = await this.messagesService.createMessage(data);
 
     // Emit the message to the sender
