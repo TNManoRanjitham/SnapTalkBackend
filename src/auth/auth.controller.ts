@@ -1,13 +1,13 @@
 // src/user/user.controller.ts
-import { Controller, Post, Body, Res, Req, HttpStatus } from '@nestjs/common';
+import { Controller, Post, Body, Res, Req, HttpStatus, Headers } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { ApiTags, ApiResponse, ApiBody } from '@nestjs/swagger';
 import { SignupRequestDto, LoginRequestDto } from './auth.dto';
 
-@ApiTags('auth') 
+@ApiTags('auth')
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  constructor(private readonly authService: AuthService) { }
 
   @Post('signup')
   @ApiBody({ description: 'User signup payload', type: SignupRequestDto })
@@ -24,16 +24,21 @@ export class AuthController {
   @ApiResponse({ status: HttpStatus.OK, description: 'Login successful' })
   @ApiResponse({ status: HttpStatus.UNAUTHORIZED, description: 'Invalid credentials' })
   @ApiResponse({ status: HttpStatus.BAD_REQUEST, description: 'Bad Request' })
-  async login(@Body() body : LoginRequestDto, @Res() res, @Req() req) {
+  async login(@Body() body: LoginRequestDto, @Res() res, @Req() req, @Headers() headers) {
 
     const { username, password } = body;
-    const user = await this.authService.validateUser(username, password);
+    
+    // Ensure the header keys match the actual keys used
+    const deviceId = headers['device-id'] || headers['Device-Id']; // Handle case sensitivity
+    const deviceType = headers['device-type'] || headers['Device-Type']; // Handle case sensitivity
+
+    const { user, registeredDeviceId } = await this.authService.validateUser(username, password, deviceId, deviceType);
     if (!user) {
       return res.status(HttpStatus.UNAUTHORIZED).send({ message: 'Invalid credentials' });
     }
 
     let token = await this.authService.login(user);
-    res.status(HttpStatus.OK).send({ ...token, message: 'Login successful' });
+    res.status(HttpStatus.OK).send({registeredDeviceId,  ...token, message: 'Login successful' });
   }
 
 }

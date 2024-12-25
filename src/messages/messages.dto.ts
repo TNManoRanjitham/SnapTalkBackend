@@ -9,6 +9,9 @@ export class SendMessageDto {
 
   @ApiProperty({ description: 'The content of the message', example: 'Hello, World!' })
   content: string;
+
+  @ApiProperty({ description: 'DeviceId', example: 'UUID' })
+  deviceId: string;
 }
 
 export class ReceiveMessageDto {

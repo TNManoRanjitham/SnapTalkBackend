@@ -49,12 +49,12 @@ export class MessagesGateway {
     }
   }
 
-  // Handles incoming messages and routes them to the appropriate recipients
+
   @ApiOperation({ summary: 'Send a message via WebSocket' })
   @ApiBody({ type: SendMessageDto, description: 'Payload for sending a message' })
   @SubscribeMessage('send_message')
   async handleMessage(
-    @MessageBody() data: { sender: string; recipient: string; content: string },
+    @MessageBody() data: { sender: string; recipient: string; content: string, deviceId: string },
     @ConnectedSocket() client: Socket,
   ) {
     console.log('Message received:', data);
@@ -68,8 +68,55 @@ export class MessagesGateway {
     const recipientSocket = this.activeUsers.get(data.recipient);
     if (recipientSocket) {
       recipientSocket.emit('receive_message', { ...data, timestamp: new Date().toISOString() } as ReceiveMessageDto);
+      await this.messagesService.updateMessageStatus(message._id.toString(), data.deviceId, "delivered");
     } else {
       console.log(`Recipient ${data.recipient} is not connected`);
+      await this.messagesService.storeUndeliveredMessage(message._id.toString(), data.deviceId);
+
     }
   }
+
+  // Endpoint to trigger undelivered messages for a user
+  @SubscribeMessage('fetch_undelivered_messages')
+  async fetchUndeliveredMessages(
+    @MessageBody() { recipient, loggedUserId }: { recipient: string, loggedUserId: string },
+    @ConnectedSocket() client: Socket,
+  ) {
+    try {
+      console.log('Fetching undelivered messages for:', recipient);
+
+      // Fetch undelivered messages from the database
+      const undeliveredMessages = await this.messagesService.getUndeliveredMessages(recipient, loggedUserId);
+
+      if (undeliveredMessages.length > 0) {
+        console.log(`Sending undelivered messages to ${loggedUserId}`);
+
+        undeliveredMessages.forEach((message) => {
+          const recipientSocket = this.activeUsers.get(loggedUserId);
+
+          if (recipientSocket) {
+            client.emit('receive_message', {
+              sender: recipient,
+              recipient: loggedUserId,
+              content: message.content,
+              timestamp: new Date().toISOString(),
+            });
+            
+            message.status.forEach((status) => {
+              if (status.deviceId) {
+                this.messagesService.updateMessageStatus(message._id.toString(), status.deviceId, 'delivered');
+              }
+            });
+          } else {
+            console.log(`Recipient ${loggedUserId} is not online`);
+          }
+        });
+      } else {
+        console.log('No undelivered messages found for', recipient);
+      }
+    } catch (error) {
+      console.error('Error fetching undelivered messages:', error);
+    }
+  }
+
 }
