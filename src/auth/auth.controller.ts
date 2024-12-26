@@ -29,8 +29,8 @@ export class AuthController {
     const { username, password } = body;
     
     // Ensure the header keys match the actual keys used
-    const deviceId = headers['device-id'] || headers['Device-Id']; // Handle case sensitivity
-    const deviceType = headers['device-type'] || headers['Device-Type']; // Handle case sensitivity
+    const deviceId = headers['device-id'] || headers['Device-Id'];
+    const deviceType = headers['device-type'] || headers['Device-Type'];
 
     const { user, registeredDeviceId } = await this.authService.validateUser(username, password, deviceId, deviceType);
     if (!user) {

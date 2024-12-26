@@ -15,10 +15,10 @@ export class Device {
 
 @Schema()
 export class User extends Document {
-  @Prop({ required: true, unique: true }) // Equivalent to { type: String, required: true, unique: true }
+  @Prop({ required: true, unique: true })
   username: string;
 
-  @Prop({ required: true }) // Equivalent to { type: String, required: true }
+  @Prop({ required: true }) 
   password: string;
 
   @Prop({ type: [Device], default: [] })

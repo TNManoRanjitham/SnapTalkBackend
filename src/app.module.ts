@@ -12,7 +12,6 @@ import { ConfigModule } from '@nestjs/config';
     ConfigModule.forRoot({
       isGlobal: true, // Ensures .env variables are accessible throughout the application
     }),
-    // Use .env for MongoDB URI
     MongooseModule.forRoot(process.env.MONGODB_URI || 'mongodb://localhost:27017/snap_talk'), 
     MessagesModule, AuthModule, UserModule],
   controllers: [AppController],

@@ -15,6 +15,6 @@ import { UserService } from '../user/user.service';
       signOptions: { expiresIn: '1h' },
     }),MongooseModule.forFeature([{ name: 'User', schema: UserSchema }])],
   controllers: [AuthController],
-  providers: [ AuthService, JwtStrategy, UserService],
+  providers: [AuthService, JwtStrategy, UserService],
 })
 export class AuthModule {}

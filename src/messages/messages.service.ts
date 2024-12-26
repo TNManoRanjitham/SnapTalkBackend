@@ -28,10 +28,10 @@ export class MessagesService {
     }).sort({ timestamp: 1 }); // Sorting by timestamp to get messages in order
   }
 
-  // Store undelivered message
+  //Update the status of the specific undelivered message 
   async storeUndeliveredMessage(_id: string) {
     try {
-      // Update the status of the specific deviceId in the message
+    
       const result = await this.messageModel.updateOne(
         {
           _id: _id,
@@ -44,7 +44,7 @@ export class MessagesService {
       );
 
       if (result.modifiedCount === 0) {
-        throw new Error('No matching message or deviceId found to update.');
+        throw new Error('No matching message found to update.');
       }
 
       return { message: 'Message status updated successfully' };

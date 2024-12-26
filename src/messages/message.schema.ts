@@ -14,7 +14,7 @@ export class Status {
   deviceId: string;
 
   @Prop({ required: true })
-  status: string; // Options: sent, delivered, read
+  status: string; 
 }
 
 @Schema({ timestamps: true }) // Adds createdAt and updatedAt fields automatically
@@ -38,8 +38,7 @@ export class Message extends Document {
   // status: Status[];
 }
 
-// Create the Mongoose schema
 export const MessageSchema = SchemaFactory.createForClass(Message);
 
-// Add indexing for faster queries
+
 MessageSchema.index({ sender: 1, recipient: 1, timestamp: 1 });

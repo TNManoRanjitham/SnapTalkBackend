@@ -7,7 +7,7 @@ This is a NestJS-based application that implements a WebSocket chat system with 
 - Real-time messaging using WebSockets.
 - Health check endpoint.
 - Message sending and receiving between users.
-- JWT authentication (or any other authentication method as per your configuration).
+- JWT authentication.
   
 ## Prerequisites
 

@@ -2,16 +2,21 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { MessagesGateway } from './socket.gateway';
 import { MessagesService } from './messages.service';
 import { Socket } from 'socket.io';
+import { MessageStatus} from './message.schema';
 
 // Mock the MessagesService
 const mockMessagesService = {
   createMessage: jest.fn(),
+  getUndeliveredMessages: jest.fn(),
+  storeUndeliveredMessage: jest.fn(),
+  updateMessageStatus: jest.fn()
 };
 
 describe('MessagesGateway', () => {
   let gateway: MessagesGateway;
   let messagesService: MessagesService;
   let mockSocket: Socket;
+  let mockRecipientSocket: Socket;
 
   beforeEach(async () => {
     // Create a testing module
@@ -32,7 +37,22 @@ describe('MessagesGateway', () => {
         },
       },
       id: 'socket-id',
-    } as any; // Mock the socket object
+    } as any;
+
+    mockRecipientSocket = {
+      emit: jest.fn(),
+      handshake: {
+        query: {
+          userId: 'recipient-user',
+        },
+      },
+      id: 'recipient-socket-id',
+    } as any;
+  });
+
+  afterEach(() => {
+    jest.clearAllMocks();
+    gateway['activeUsers'].clear();
   });
 
   it('should be defined', () => {
@@ -56,27 +76,93 @@ describe('MessagesGateway', () => {
     expect(gateway['activeUsers'].size).toBe(0);
   });
 
-  it('should handle sending a message', async () => {
+  it('should handle sending a message when recipient is online', async () => {
+    gateway.handleConnection(mockRecipientSocket);
+
     const messageData = {
       sender: 'test-user',
       recipient: 'recipient-user',
       content: 'Hello!',
     };
-    const message = { ...messageData, timestamp: new Date().toISOString() };
 
-    // Mock the createMessage method to return a message
+    const message = {
+      ...messageData,
+      _id: '676c4b3b9d2933de45edcd8c',
+      timestamp: new Date().toISOString(),
+    };
+
     mockMessagesService.createMessage.mockResolvedValue(message);
 
-    // Simulating a message send
     await gateway.handleMessage(messageData, mockSocket);
 
-    // Check if message was emitted to the sender
+    // Emitted to sender
     expect(mockSocket.emit).toHaveBeenCalledWith('receive_message', expect.objectContaining({
-      sender: message.sender,
-      content: message.content,
+      sender: 'test-user',
+      content: 'Hello!',
     }));
 
-    // If the recipient is connected, emit to them as well
-    expect(gateway['activeUsers'].size).toBe(0); // No recipient is connected, so size should be 0
+    // Emitted to recipient
+    expect(mockRecipientSocket.emit).toHaveBeenCalledWith('receive_message', expect.objectContaining({
+      sender: 'test-user',
+      content: 'Hello!',
+    }));
   });
+
+  it('should handle sending a message when recipient is offline', async () => {
+    const messageData = {
+      sender: 'test-user',
+      recipient: 'offline-user',
+      content: 'Hello!',
+    };
+
+    const message = {
+      ...messageData,
+      _id: '676c4b3b9d2933de45edcd8c',
+      timestamp: new Date().toISOString(),
+    };
+
+    mockMessagesService.createMessage.mockResolvedValue(message);
+
+    await gateway.handleMessage(messageData, mockSocket);
+
+    // Emitted to sender
+    expect(mockSocket.emit).toHaveBeenCalledWith('receive_message', expect.objectContaining({
+      sender: 'test-user',
+      content: 'Hello!',
+    }));
+
+    expect(mockMessagesService.storeUndeliveredMessage).toHaveBeenCalledWith(message._id.toString());
+  });
+
+  it('should fetch and send undelivered messages', async () => {
+    const undeliveredMessages = [
+      { _id: '1', sender: 'test-user', recipient : 'recipient-user', content: 'Message 1' },
+      { _id: '2', sender: 'test-user', recipient : 'recipient-user',  content: 'Message 2' },
+    ];
+
+    mockMessagesService.getUndeliveredMessages.mockResolvedValue(undeliveredMessages);
+
+    await gateway.fetchUndeliveredMessages({ recipient: 'test-user', loggedUserId: 'recipient-user' }, mockRecipientSocket);
+
+    expect(mockMessagesService.getUndeliveredMessages).toHaveBeenCalledWith('test-user', 'recipient-user');
+    expect(mockRecipientSocket.emit).toHaveBeenCalledTimes(2);
+    expect(mockRecipientSocket.emit).toHaveBeenCalledWith('receive_message', expect.objectContaining({
+      _id: '1',
+      content: 'Message 1',
+    }));
+    expect(mockRecipientSocket.emit).toHaveBeenCalledWith('receive_message', expect.objectContaining({
+      _id: '2',
+      content: 'Message 2',
+    }));
+  });
+
+  it('should update message status to delivered', async () => {
+    const messageId = '676c4b3b9d2933de45edcd8c';
+    const userId = 'test-user';
+
+    await gateway.handleDeliveredMessage({ messageId, userId });
+
+    expect(mockMessagesService.updateMessageStatus).toHaveBeenCalledWith(messageId, userId, MessageStatus.DELIVERED);
+  });
+
 });

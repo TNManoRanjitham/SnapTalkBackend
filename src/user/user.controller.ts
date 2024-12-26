@@ -12,7 +12,6 @@ export class UserController {
   @UseGuards(JwtAuthGuard)
   @Get()
   async getUsers(@Query('userId') userId: string) {
-    // Call the service method with the userId
     return this.userService.getUsers(userId);
   }
 

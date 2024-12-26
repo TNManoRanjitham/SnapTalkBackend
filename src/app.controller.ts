@@ -2,7 +2,7 @@ import { Controller, Get } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 
 @ApiTags('Health')
-@Controller('health') // Change path to '/health'
+@Controller('health')
 export class AppController {
   // Health check endpoint
   @ApiOperation({ summary: 'Checks if the service is healthy' })
